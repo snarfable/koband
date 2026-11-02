@@ -41,7 +41,7 @@ ENV PATH=${PATH}:/workspace/build/packmol
 WORKDIR ..
 
 # Get Kob-Andersen system generator
-RUN git clone https://github.com/mathemaphysics/koband
+RUN git clone https://github.com/snarfable/koband
 WORKDIR koband
 WORKDIR ..
 
