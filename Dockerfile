@@ -5,7 +5,7 @@ RUN apt-get update -y \
     && apt-get install -y build-essential gfortran git make cmake \
     && apt-get install -y vim libfftw3-dev
 RUN apt-get install -y gawk openbabel libopenbabel-dev perl cpanminus \
-    && cpanm Template Modern::Perl
+    && cpanm install Template Modern::Perl
 
 WORKDIR /workspace/build
 RUN git clone https://github.com/gromacs/gromacs
