@@ -1,0 +1,120 @@
+#!/bin/bash
+
+idx=""
+jobid=""
+jobidin=""
+while getopts "i:j:k:s:h" opt; do
+    case ${opt} in
+        h)
+            echo "Usage: $(basename $0) [-h] [-i index] [-j jobid] [-k jobid_in] [-s stage]"
+            exit 0
+            ;;
+        i)
+            idx="${OPTARG}"
+            ;;
+        j)
+            jobid="${OPTARG}"
+            ;;
+        k)
+            jobidin="${OPTARG}"
+            ;;
+        s)
+            stage="${OPTARG}"
+            ;;
+        ?|*)
+            echo "No such option available."
+            ;;
+    esac
+done
+pref="${idx:+${idx}_}"
+suff="${jobid:+_${jobid}}"
+suffin="${jobidin:+_${jobidin}}"
+stage="${stage:+-${stage}}"
+
+# Check for presence of all required files
+if [ ! -f ../${pref}topol.top ]; then
+    echo "Cannot find file ../${pref}topol.top"
+    exit 127 # Unsigned byte => -1
+fi
+if [ ! -f ../${pref}step${stage}.mdp ]; then
+    echo "Cannot find file ../${pref}step${stage}.mdp"
+    exit 126 # Unsigned byte => -2
+fi
+if [ ! -f ../${pref}confin-box.gro ]; then
+    echo "Cannot find file ../${pref}confin-box.gro"
+    exit 125 # Unsigned byte => -3
+fi
+
+# Identify locations of binaries needed
+GMXBIN="$(python3 -c "from pathlib import Path; print(Path('gmx_mpi').resolve().parent)")"
+GROMPP="gmx grompp"
+MDRUN="gmx mdrun"
+
+# Set the call string
+MPIRUN_GROMPP=""
+MPIARGS_GROMPP=""
+EXENAME_GROMPP="${GROMPP}"
+EXEARGS_GROMPP="-o ${pref}topol${stage}${suff}.tpr \
+    -p ../${pref}topol${suffin}.top \
+    -f ../${pref}step${stage}${suffin}.mdp \
+    -c ../${pref}confin-box${suffin}.gro \
+    -po ${pref}mdout${stage}${suff}.mdp \
+    -pp ${pref}processed${stage}${suff}.top \
+    -maxwarn 100"
+if [ -f "../${pref}trajin${suffin}.trr" ]; then
+    EXEARGS_GROMPP="${EXEARGS_GROMPP} -t ../${pref}trajin${suffin}.trr"
+fi
+if [ -f "../${pref}index${suffin}.ndx" ]; then
+    EXEARGS_GROMPP="${EXEARGS_GROMPP} -n ../${pref}index${suffin}.ndx"
+fi
+
+# Set the call string for first step
+CALL_STRING_GROMPP="${MPIRUN_GROMPP} ${MPIARGS_GROMPP} ${EXENAME_GROMPP} ${EXEARGS_GROMPP}"
+
+# Output start and finish times
+echo "Running in $(pwd)"
+echo "Calling:"
+echo ${CALL_STRING_GROMPP}
+echo "Started at $(date)"
+eval ${CALL_STRING_GROMPP}
+echo "Finished ${EXENAME_GROMPP} at $(date)"
+
+# Set up location of mpirun
+MPIRUN_MDRUN=""
+MPIARGS_MDRUN=""
+ENVARGS_MDRUN="HWLOC_COMPONENTS=-gl DISPLAY= "
+EXENAME_MDRUN="${MDRUN}"
+EXEARGS_MDRUN="-v -c ${pref}confout-box${stage}${suff}.gro \
+   -e ${pref}ener${stage}${suff}.edr \
+   -g ${pref}md${stage}${suff}.log \
+   -s ${pref}topol${stage}${suff}.tpr \
+   -o ${pref}traj${stage}${suff}.trr \
+   -x ${pref}traj${stage}${suff}.xtc \
+   -cpo ${pref}state${stage}${suff}.cpt \
+   -mtx ${pref}nm${stage}${suff}.mtx"
+
+# If an index file of the appropriate index and jobid shows up
+# then you can at least load it
+if [ -f "${pref}index${stage}${suff}.ndx" ]; then
+    EXEARGS_MDRUN="${EXEARGS_MDRUN} -n ${pref}index${stage}${suff}.ndx"
+fi
+
+# Important if using -ckpt in SGE or equivalent in any other queue
+# Variable RESTARTED is available for SGE as far as I know; no guarantee
+# for any other queue manager; writes a checkpoint every 5 minutes here
+if [ $RESTARTED -eq 1 ] && [ -f "${pref}state${stage}${suff}.cpt" ]; then
+    EXEARGS_MDRUN="${EXEARGS_MDRUN} -cpi ${pref}state${stage}${suff}.cpt -cpt 5 -append"
+fi
+
+# Set the call string
+CALL_STRING_MDRUN="${ENVARGS_MDRUN} ${MPIRUN_MDRUN} ${MPIARGS_MDRUN} ${EXENAME_MDRUN} ${EXEARGS_MDRUN}"
+
+# Output start and finish times
+echo "Running in $(pwd)"
+echo "Calling:"
+echo ${CALL_STRING_MDRUN}
+echo "Started at $(date)"
+eval ${CALL_STRING_MDRUN}
+echo "Finished ${EXENAME_MDRUN} at $(date)"
+
+# vim: tabstop=4:softtabstop=4:shiftwidth=4:expandtab:smarttab
