@@ -7,7 +7,7 @@
 ###############################################
 
 # Executables
-OPENBABEL    := babel
+OPENBABEL    := obabel
 PKM_PACKMOL  := packmol
 GMX_MDRUN    := gmx_d mdrun
 TNK_DYNAMIC  := dynamic
@@ -90,11 +90,11 @@ confin.pdb: $(PKM_TARGETS)
 	$(PKM_PACKMOL) <$(PKM_INPFILE)
 
 $(TNK_CONFIN): confin.pdb
-	$(OPENBABEL) -ipdb $< -otxyz $@.temp
+	$(OPENBABEL) -ipdb $< -otxyz -O $@.temp
 	sed -r -e '2,6401s/0$$$$/1/g' -e '6402,8001s/0$$$$/2/g' $@.temp >$@
 
 $(GMX_CONFIN): confin.pdb
-	$(OPENBABEL) -ipdb $< -ogro $@
+	$(OPENBABEL) -ipdb $< -ogro -O $@
 
 $(GMX_CONFIN_BOX): confin.gro fixbox
 	bash ./fixbox
