@@ -26,7 +26,7 @@
 # Load modules and set #
 # up the environment   #
 ########################
-source ~/.bash_profile intel-composer_xe_2015.3.187
+#source ~/.bash_profile intel-composer_xe_2015.3.187
 
 # Tell everyone what nodes are being used
 if [ -f "${PE_HOSTFILE}" ]; then
@@ -65,19 +65,22 @@ suffin="${jobidin:+_${jobidin}}"
 
 # Check for presence of all required files
 if [ ! -f ${pref}topol.top ]; then
+    echo "Cannot find file ${pref}topol.top"
     exit 127 # Unsigned byte => -1
 fi
 if [ ! -f ${pref}step.mdp ]; then
+    echo "Cannot find file ${pref}step.mdp"
     exit 126 # Unsigned byte => -2
 fi
 if [ ! -f ${pref}confin.gro ]; then
+    echo "Cannot find file ${pref}confin.gro"
     exit 125 # Unsigned byte => -3
 fi
 
 # Identify locations of binaries needed
-GMXBIN="/opt/gromacs/4.6.5/bin"
-GROMPP="${GMXBIN}/grompp_d"
-MDRUN="${GMXBIN}/mdrun_d"
+GMXBIN="$(python3 -c "from pathlib import Path; print(Path('gmx_mpi').resolve().parent)")"
+GROMPP="gmx grompp"
+MDRUN="gmx mdrun"
 
 # Set the call string
 MPIRUN_GROMPP=""
