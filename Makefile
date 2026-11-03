@@ -13,6 +13,10 @@ GMX_MDRUN    := gmx_d mdrun
 TNK_DYNAMIC  := dynamic
 TNK_MINIMIZE := minimize
 
+# CMake setup
+CMAKE        ?= cmake
+BUILD_DIR    ?= build
+
 # The name of the configure file to do the work
 CONFIGURE    := ./configure.pl
 
@@ -73,7 +77,7 @@ chg-14-scale     2.0
 
 endef
 
-.PHONY: check clean header
+.PHONY: check clean very-clean header run-min run-pre run-run simulation min pre run
 
 %: %.tt
 	$(CONFIGURE) $<
@@ -105,20 +109,45 @@ $(GMX_TARGETS): $(PKM_TARGETS)
 
 $(TNK_TARGETS): $(PKM_TARGETS)
 
-run-min/confout-box-min.gro: $(GMX_TARGETS)
-	mkdir run-min
-	cd run-min && ../gmx-mdrun -s min
+# Simulation end targets run using CMake
+run-min:
+	$(CMAKE) -B $(BUILD_DIR)
+	$(CMAKE) --build $(BUILD_DIR) --target run-min
 
-run-pre/confout-box-pre.gro: $(GMX_TARGETS) run-min/confout-box-min.gro
-	mkdir run-pre
-	cd run-pre && ../gmx-mdrun -s pre -S min -p ../run-min
+run-pre:
+	$(CMAKE) -B $(BUILD_DIR)
+	$(CMAKE) --build $(BUILD_DIR) --target run-pre
 
-run-run/confout-box-run.gro: $(GMX_TARGETS) run-pre/confout-box-pre.gro
-	mkdir run-run
-	cd run-run && ../gmx-mdrun -s run -S pre -p ../run-pre
+run-run:
+	$(CMAKE) -B $(BUILD_DIR)
+	$(CMAKE) --build $(BUILD_DIR) --target run-run
+
+simulation:
+	$(CMAKE) -B $(BUILD_DIR)
+	$(CMAKE) --build $(BUILD_DIR) --target simulation
+
+# Target aliases
+min: run-min
+pre: run-pre
+run: run-run
+
+run-min/confout-box-min.gro: run-min
+	@if [ -d $(BUILD_DIR)/run-min ] && [ ! -d run-min ]; then \
+		ln -s $(BUILD_DIR)/run-min run-min 2>/dev/null || cp -r $(BUILD_DIR)/run-min run-min; \
+	fi
+
+run-pre/confout-box-pre.gro: run-pre
+	@if [ -d $(BUILD_DIR)/run-pre ] && [ ! -d run-pre ]; then \
+		ln -s $(BUILD_DIR)/run-pre run-pre 2>/dev/null || cp -r $(BUILD_DIR)/run-pre run-pre; \
+	fi
+
+run-run/confout-box-run.gro: run-run
+	@if [ -d $(BUILD_DIR)/run-run ] && [ ! -d run-run ]; then \
+		ln -s $(BUILD_DIR)/run-run run-run 2>/dev/null || cp -r $(BUILD_DIR)/run-run run-run; \
+	fi
 
 clean:
-	rm -rf output.log $(GMX_TARGETS) $(TNK_TARGETS) $(PKM_TARGETS) confin.pdb header.tmp confin.xyz.temp fixbox run-min run-pre run-run
+	rm -rf output.log $(GMX_TARGETS) $(TNK_TARGETS) $(PKM_TARGETS) confin.pdb header.tmp confin.xyz.temp fixbox run-min run-pre run-run $(BUILD_DIR)
 
 very-clean:
 	make clean
@@ -130,6 +159,8 @@ check:
 	@echo $(GMX_TARGETS)
 	@echo "Tinker Targets:"
 	@echo $(TNK_TARGETS)
+	@echo "Simulation End Targets (CMake):"
+	@echo "run-min, run-pre, run-run (or 'make simulation')"
 
 
 # vim: tw=65:ts=4:sts=4:sw=4:sta
