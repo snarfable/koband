@@ -105,8 +105,20 @@ $(GMX_TARGETS): $(PKM_TARGETS)
 
 $(TNK_TARGETS): $(PKM_TARGETS)
 
+run-min/confout-box-min.gro: $(GMX_TARGETS)
+	mkdir run-min
+	cd run-min && ../gmx-mdrun -s min
+
+run-pre/confout-box-pre.gro: $(GMX_TARGETS) run-min/confout-box-min.gro
+	mkdir run-pre
+	cd run-pre && ../gmx-mdrun -s pre -S min -p ../run-min
+
+run-run/confout-box-run.gro: $(GMX_TARGETS) run-pre/confout-box-pre.gro
+	mkdir run-run
+	cd run-run && ../gmx-mdrun -s run -S pre -p ../run-pre
+
 clean:
-	rm -rf output.log $(GMX_TARGETS) $(TNK_TARGETS) $(PKM_TARGETS) confin.pdb header.tmp confin.xyz.temp fixbox
+	rm -rf output.log $(GMX_TARGETS) $(TNK_TARGETS) $(PKM_TARGETS) confin.pdb header.tmp confin.xyz.temp fixbox run-min run-pre run-run
 
 very-clean:
 	make clean

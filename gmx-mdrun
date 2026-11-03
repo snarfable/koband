@@ -1,16 +1,23 @@
 #!/bin/bash
 
 idx=""
+idxin=""
 jobid=""
 jobidin=""
-while getopts "i:j:k:s:h" opt; do
+stage=""
+stagein=""
+folderin=".."
+while getopts "i:I:j:k:s:S:p:h" opt; do
     case ${opt} in
         h)
-            echo "Usage: $(basename $0) [-h] [-i index] [-j jobid] [-k jobid_in] [-s stage]"
+            echo "Usage: $(basename $0) [-h] [-i index] [I indexin] [-j jobid] [-k jobid_in] [-s stage] [-S stagein]"
             exit 0
             ;;
         i)
             idx="${OPTARG}"
+            ;;
+        I)
+            idxin="${OPTARG}"
             ;;
         j)
             jobid="${OPTARG}"
@@ -21,28 +28,60 @@ while getopts "i:j:k:s:h" opt; do
         s)
             stage="${OPTARG}"
             ;;
+        S)
+            stagein="${OPTARG}"
+            ;;
+	p)
+	    folderin="${OPTARG}"
+	    ;;
         ?|*)
             echo "No such option available."
             ;;
     esac
 done
 pref="${idx:+${idx}_}"
+prefin="${idxin:+${idxin}_}"
 suff="${jobid:+_${jobid}}"
 suffin="${jobidin:+_${jobidin}}"
 stage="${stage:+-${stage}}"
+stagein="${stagein:+-${stagein}}"
 
 # Check for presence of all required files
-if [ ! -f ../${pref}topol.top ]; then
-    echo "Cannot find file ../${pref}topol.top"
+topol_file_in="${folderin}/${prefin}topol${stagein}${suffin}.top"
+step_file_in="../${prefin}step${stage}${suffin}.mdp"
+confin_file_in="${folderin}/${prefin}confin-box${stagein}${suffin}.gro"
+
+# Mandatory copied outputs
+topol_file_out="${pref}topol${stage}${suff}.top"
+step_file_out="${pref}step${stage}${suff}.mdp"
+confin_file_out="${pref}confin-box${stage}${suff}.gro"
+
+# Optional copied outputs
+trajin_file_out="${pref}trajin${stage}${suff}.trr"
+index_file_out="${pref}index${stage}${suff}.ndx"
+
+# Compiler outputs
+tpr_file_out="${pref}topol${stage}${suff}.tpr"
+mdout_file_out="${pref}mdout${stage}${suff}.mdp"
+processed_file_out="${pref}processed${stage}${suff}.top"
+
+if [ ! -f "${topol_file_in}" ]; then
+    echo "Cannot find file ${topol_file_in}"
     exit 127 # Unsigned byte => -1
+else
+    cp ${topol_file_in} ${topol_file_out}
 fi
-if [ ! -f ../${pref}step${stage}.mdp ]; then
-    echo "Cannot find file ../${pref}step${stage}.mdp"
+if [ ! -f "${step_file_in}" ]; then
+    echo "Cannot find file ${step_file_in}"
     exit 126 # Unsigned byte => -2
+else
+    cp ${step_file_in} ${step_file_out}
 fi
-if [ ! -f ../${pref}confin-box.gro ]; then
-    echo "Cannot find file ../${pref}confin-box.gro"
+if [ ! -f "${confin_file_in}" ]; then
+    echo "Cannot find file ${confin_file_in}"
     exit 125 # Unsigned byte => -3
+else
+    cp ${confin_file_in} ${confin_file_out}
 fi
 
 # Identify locations of binaries needed
@@ -54,18 +93,18 @@ MDRUN="gmx mdrun"
 MPIRUN_GROMPP=""
 MPIARGS_GROMPP=""
 EXENAME_GROMPP="${GROMPP}"
-EXEARGS_GROMPP="-o ${pref}topol${stage}${suff}.tpr \
-    -p ../${pref}topol${suffin}.top \
-    -f ../${pref}step${stage}${suffin}.mdp \
-    -c ../${pref}confin-box${suffin}.gro \
-    -po ${pref}mdout${stage}${suff}.mdp \
-    -pp ${pref}processed${stage}${suff}.top \
+EXEARGS_GROMPP="-o ${tpr_file_out} \
+    -p ${topol_file_out} \
+    -f ${step_file_out} \
+    -c ${confin_file_out} \
+    -po ${mdout_file_out} \
+    -pp ${processed_file_out} \
     -maxwarn 100"
-if [ -f "../${pref}trajin${suffin}.trr" ]; then
-    EXEARGS_GROMPP="${EXEARGS_GROMPP} -t ../${pref}trajin${suffin}.trr"
+if [ -f "${trajin_file_out}" ]; then
+    EXEARGS_GROMPP="${EXEARGS_GROMPP} -t ${trajin_file_out}"
 fi
-if [ -f "../${pref}index${suffin}.ndx" ]; then
-    EXEARGS_GROMPP="${EXEARGS_GROMPP} -n ../${pref}index${suffin}.ndx"
+if [ -f "${index_file_out}" ]; then
+    EXEARGS_GROMPP="${EXEARGS_GROMPP} -n ${index_file_out}"
 fi
 
 # Set the call string for first step
@@ -90,8 +129,8 @@ EXEARGS_MDRUN="-v -c ${pref}confout-box${stage}${suff}.gro \
    -s ${pref}topol${stage}${suff}.tpr \
    -o ${pref}traj${stage}${suff}.trr \
    -x ${pref}traj${stage}${suff}.xtc \
-   -cpo ${pref}state${stage}${suff}.cpt \
-   -mtx ${pref}nm${stage}${suff}.mtx"
+   -cpo ${pref}state${stage}${suff}.cpt
+   #-mtx ${pref}nm${stage}${suff}.mtx"
 
 # If an index file of the appropriate index and jobid shows up
 # then you can at least load it
