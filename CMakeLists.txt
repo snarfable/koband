@@ -135,18 +135,18 @@ add_custom_command(
 )
 
 add_custom_command(
-    OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/confin-box.gro"
+    OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/confout-box.gro"
     COMMAND ${BASH_EXECUTABLE} fixbox
     DEPENDS "${CMAKE_CURRENT_BINARY_DIR}/confin.gro"
             "${CMAKE_CURRENT_BINARY_DIR}/fixbox"
     WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
-    COMMENT "Adjusting box dimensions via fixbox -> confin-box.gro"
+    COMMENT "Adjusting box dimensions via fixbox -> confout-box.gro"
     VERBATIM
 )
 
 set(GMX_TARGETS
     "${CMAKE_CURRENT_BINARY_DIR}/confin.gro"
-    "${CMAKE_CURRENT_BINARY_DIR}/confin-box.gro"
+    "${CMAKE_CURRENT_BINARY_DIR}/confout-box.gro"
     "${CMAKE_CURRENT_BINARY_DIR}/topol.top"
     "${CMAKE_CURRENT_BINARY_DIR}/step-min.mdp"
     "${CMAKE_CURRENT_BINARY_DIR}/step-pre.mdp"
@@ -315,7 +315,7 @@ set_property(DIRECTORY PROPERTY ADDITIONAL_CLEAN_FILES
     "${CMAKE_CURRENT_BINARY_DIR}/output.log"
     "${CMAKE_CURRENT_BINARY_DIR}/confin.pdb"
     "${CMAKE_CURRENT_BINARY_DIR}/confin.gro"
-    "${CMAKE_CURRENT_BINARY_DIR}/confin-box.gro"
+    "${CMAKE_CURRENT_BINARY_DIR}/confout-box.gro"
     "${CMAKE_CURRENT_BINARY_DIR}/confin.xyz"
     "${CMAKE_CURRENT_BINARY_DIR}/confin.xyz.temp"
     "${CMAKE_CURRENT_BINARY_DIR}/header.tmp"

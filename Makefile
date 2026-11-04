@@ -39,7 +39,7 @@ GMX_TOPFILE		:= topol.top
 GMX_PTLFILES	:= $(GMX_ITPFILES) $(GMX_TOPFILE)
 GMX_MDPFILE		:= step-min.mdp step-pre.mdp step-run.mdp
 GMX_CONFIN		:= confin.gro
-GMX_CONFIN_BOX	:= confin-box.gro
+GMX_CONFIN_BOX	:= confout-box.gro
 GMX_TARGETS		:= $(GMX_CONFIN) $(GMX_MDPFILE) \
 					$(GMX_PTLFILES) $(GMX_CONFIN_BOX)
 TNK_KEYFILE		:= keyfile.key

@@ -49,7 +49,7 @@ stagein="${stagein:+-${stagein}}"
 # Check for presence of all required files
 topol_file_in="${folderin}/${prefin}topol${stagein}${suffin}.top"
 step_file_in="../${prefin}step${stage}${suffin}.mdp"
-confin_file_in="${folderin}/${prefin}confin-box${stagein}${suffin}.gro"
+confin_file_in="${folderin}/${prefin}confout-box${stagein}${suffin}.gro"
 
 # Mandatory copied outputs
 topol_file_out="${pref}topol${stage}${suff}.top"
